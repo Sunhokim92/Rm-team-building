@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0e0e10">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href='data:application/manifest+json,{"name":"팀 나누기","short_name":"팀 나누기","start_url":".","display":"standalone","background_color":"%230e0e10","theme_color":"%230e0e10","icons":[{"src":"data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><rect width=%22128%22 height=%22128%22 fill=%22%23ff6b3d%22 rx=%2228%22/><text x=%2264%22 y=%2282%22 font-size=%2260%22 text-anchor=%22middle%22 fill=%22white%22 font-family=%22sans-serif%22 font-weight=%22bold%22>팀</text></svg>","sizes":"128x128","type":"image/svg+xml"}]}'>
+<title>팀 나누기 — Team Divider</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,700;0,900;1,700&family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+  :root{
+    --bg: #0e0e10;
+    --surface: #17171b;
+    --surface-2: #1f1f25;
+    --border: #2a2a31;
+    --text: #ececf0;
+    --muted: #8a8a95;
+    --accent: #ff6b3d;
+    --accent-soft: rgba(255,107,61,.12);
+    --good: #7dd87d;
+    --bad: #ff8a6b;
+    --serif: 'Fraunces', Georgia, serif;
+    --sans: 'IBM Plex Sans KR', -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:var(--sans);font-weight:400;-webkit-font-smoothing:antialiased;overscroll-behavior:none;}
+  body{padding-bottom:env(safe-area-inset-bottom);}
+
+  /* ----- Layout ----- */
+  .app{max-width:720px;margin:0 auto;padding:24px 20px 120px;}
+  header{padding:24px 0 28px;border-bottom:1px solid var(--border);margin-bottom:20px;}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--accent);margin-bottom:10px;}
+  h1{font-family:var(--serif);font-weight:900;font-size:44px;line-height:1;margin:0 0 10px;letter-spacing:-.02em;}
+  h1 em{font-style:italic;font-weight:700;color:var(--accent);}
+  .sub{color:var(--muted);font-size:14px;line-height:1.5;max-width:520px;}
+
+  /* ----- Section headings ----- */
+  h2{font-family:var(--serif);font-weight:700;font-size:22px;margin:32px 0 14px;letter-spacing:-.01em;display:flex;align-items:baseline;gap:10px;}
+  h2 .num{font-family:var(--mono);font-size:12px;color:var(--muted);font-weight:400;letter-spacing:.1em;}
+
+  /* ----- Person list ----- */
+  .people{display:flex;flex-direction:column;gap:8px;}
+  .person{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;transition:border-color .15s;}
+  .person:focus-within{border-color:var(--accent);}
+  .idx{font-family:var(--mono);font-size:11px;color:var(--muted);min-width:22px;}
+  .fields{flex:1;display:grid;grid-template-columns:1.3fr .8fr 1.2fr .9fr 1fr;gap:6px;align-items:center;}
+  .fields input, .fields select{
+    background:transparent;border:none;border-bottom:1px solid transparent;
+    color:var(--text);font-family:var(--sans);font-size:14px;font-weight:500;
+    padding:6px 4px;width:100%;outline:none;min-width:0;
+  }
+  .fields input:focus, .fields select:focus{border-bottom-color:var(--accent);}
+  .fields select{appearance:none;-webkit-appearance:none;cursor:pointer;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='%238a8a95' fill='none' stroke-width='1.5'/></svg>");background-repeat:no-repeat;background-position:right 4px center;padding-right:16px;}
+  .fields select option{background:var(--surface);color:var(--text);}
+  .fields input[type="number"]{text-align:left;}
+  .del{background:transparent;border:1px solid var(--border);color:var(--muted);width:28px;height:28px;border-radius:50%;font-size:14px;cursor:pointer;flex-shrink:0;padding:0;line-height:1;}
+  .del:active{background:var(--bad);color:white;border-color:var(--bad);}
+
+  @media (max-width:500px){
+    .fields{grid-template-columns:1fr 1fr;gap:4px 8px;}
+    .fields input, .fields select{font-size:13px;padding:4px 2px;}
+  }
+
+  /* ----- Buttons ----- */
+  .toolbar{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}
+  button{font-family:var(--sans);font-weight:500;cursor:pointer;transition:transform .05s;}
+  button:active{transform:scale(.97);}
+  .btn{background:var(--surface);border:1px solid var(--border);color:var(--text);padding:10px 16px;border-radius:10px;font-size:13px;}
+  .btn-ghost{background:transparent;}
+  .btn-primary{background:var(--accent);border:1px solid var(--accent);color:#1a1a1a;font-weight:700;}
+
+  /* ----- Weights ----- */
+  .weights{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px;display:grid;grid-template-columns:repeat(2,1fr);gap:14px 20px;}
+  .weight{display:flex;flex-direction:column;gap:4px;}
+  .weight label{font-size:12px;color:var(--muted);display:flex;justify-content:space-between;}
+  .weight label span{font-family:var(--mono);color:var(--accent);}
+  .weight input[type="range"]{-webkit-appearance:none;appearance:none;width:100%;height:3px;background:var(--border);border-radius:2px;outline:none;}
+  .weight input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:18px;height:18px;background:var(--accent);border-radius:50%;cursor:pointer;}
+  .weight input[type="range"]::-moz-range-thumb{width:18px;height:18px;background:var(--accent);border-radius:50%;cursor:pointer;border:none;}
+
+  .restarts{display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:12px;font-size:13px;color:var(--muted);}
+  .restarts select{background:var(--surface-2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-family:var(--mono);font-size:12px;}
+
+  /* ----- Run button (sticky) ----- */
+  .run-wrap{position:fixed;left:0;right:0;bottom:0;padding:14px 20px calc(14px + env(safe-area-inset-bottom));background:linear-gradient(to top, var(--bg) 60%, transparent);z-index:20;}
+  .run-wrap .inner{max-width:720px;margin:0 auto;}
+  .run{width:100%;background:var(--accent);color:#1a1a1a;border:none;padding:16px;border-radius:14px;font-size:15px;font-weight:700;letter-spacing:-.01em;box-shadow:0 10px 30px rgba(255,107,61,.25);}
+  .run:disabled{opacity:.5;cursor:not-allowed;}
+
+  /* ----- Results ----- */
+  .results{margin-top:10px;}
+  .score-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 18px;margin-bottom:18px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;}
+  .score-big{font-family:var(--serif);font-size:40px;font-weight:700;letter-spacing:-.02em;}
+  .score-label{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;}
+  .score-delta{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--good);}
+  .score-delta.bad{color:var(--bad);}
+
+  .team{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:10px;animation:rise .3s ease backwards;}
+  .team:nth-child(1){animation-delay:.05s;}
+  .team:nth-child(2){animation-delay:.1s;}
+  .team:nth-child(3){animation-delay:.15s;}
+  .team:nth-child(4){animation-delay:.2s;}
+  .team:nth-child(5){animation-delay:.25s;}
+  .team:nth-child(6){animation-delay:.3s;}
+  @keyframes rise{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+
+  .team-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px;padding-bottom:8px;border-bottom:1px dashed var(--border);}
+  .team-name{font-family:var(--serif);font-size:20px;font-weight:700;letter-spacing:-.01em;}
+  .team-name .n{color:var(--accent);font-style:italic;}
+  .team-score{font-family:var(--mono);font-size:12px;color:var(--muted);}
+  .team-score b{color:var(--text);}
+  .member{display:grid;grid-template-columns:1fr auto auto auto auto;gap:8px 14px;padding:6px 0;font-size:13px;align-items:center;}
+  .member .mn{font-weight:600;font-size:14px;}
+  .member .mm{font-family:var(--mono);color:var(--muted);font-size:12px;}
+  .tag{display:inline-block;padding:2px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-size:11px;font-weight:500;letter-spacing:.02em;}
+  .tag.gray{background:var(--surface-2);color:var(--muted);}
+
+  @media (max-width:500px){
+    .member{grid-template-columns:1fr auto;}
+    .member .mm, .member .tag{font-size:11px;}
+  }
+
+  /* ----- Empty state ----- */
+  .empty{text-align:center;color:var(--muted);padding:40px 20px;font-size:14px;border:1px dashed var(--border);border-radius:14px;}
+
+  /* ----- Footnote ----- */
+  footer{margin-top:40px;padding:20px 0 0;border-top:1px solid var(--border);color:var(--muted);font-size:12px;line-height:1.6;}
+  footer code{font-family:var(--mono);background:var(--surface);padding:2px 6px;border-radius:4px;color:var(--text);font-size:11px;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="eyebrow">Team Divider v1.0</div>
+    <h1>팀 <em>나누기</em></h1>
+    <p class="sub">24명을 6팀으로 나누되, 같은 팀 안의 유사도(나이·부서·직급·지역)를 최소화합니다. 랜덤 초기화 + 로컬 서치를 여러 번 재시작해 가장 다양한 조합을 찾습니다.</p>
+  </header>
+
+  <h2><span class="num">01</span> 인원</h2>
+  <div id="people" class="people"></div>
+  <div class="toolbar">
+    <button class="btn" onclick="addPerson()">+ 인원 추가</button>
+    <button class="btn btn-ghost" onclick="resetSample()">샘플 다시 불러오기</button>
+    <button class="btn btn-ghost" onclick="clearAll()">전체 비우기</button>
+  </div>
+
+  <h2><span class="num">02</span> 유사도 가중치</h2>
+  <div class="weights">
+    <div class="weight"><label>나이 <span id="w-age-v">1.0</span></label><input id="w-age" type="range" min="0" max="3" step="0.1" value="1.0"></div>
+    <div class="weight"><label>부서 <span id="w-dept-v">2.0</span></label><input id="w-dept" type="range" min="0" max="3" step="0.1" value="2.0"></div>
+    <div class="weight"><label>직급 <span id="w-rank-v">1.0</span></label><input id="w-rank" type="range" min="0" max="3" step="0.1" value="1.0"></div>
+    <div class="weight"><label>지역 <span id="w-region-v">1.0</span></label><input id="w-region" type="range" min="0" max="3" step="0.1" value="1.0"></div>
+  </div>
+  <div class="restarts">
+    <span>랜덤 재시작 횟수 — 많을수록 결과 품질↑, 시간↑</span>
+    <select id="restarts">
+      <option value="20">20</option>
+      <option value="50">50</option>
+      <option value="100" selected>100</option>
+      <option value="300">300</option>
+      <option value="1000">1000</option>
+    </select>
+  </div>
+
+  <h2><span class="num">03</span> 결과</h2>
+  <div id="results" class="results">
+    <div class="empty">아래 <b>팀 나누기 실행</b> 버튼을 눌러주세요.</div>
+  </div>
+
+  <footer>
+    <b>알고리즘:</b> Random + Iterative Improvement<br>
+    <b>유사도:</b> <code>w₁·나이유사도 + w₂·부서일치 + w₃·직급유사도 + w₄·지역일치</code><br>
+    <b>팀 점수:</b> 팀 내 모든 쌍의 유사도 합 (낮을수록 다양)<br>
+    <b>총 점수:</b> 모든 팀 점수의 합
+  </footer>
+</div>
+
+<div class="run-wrap">
+  <div class="inner">
+    <button id="run" class="run" onclick="run()">팀 나누기 실행</button>
+  </div>
+</div>
+
+<script>
+/* ---------- 상수 ---------- */
+const DEPTS   = ["개발","영업","마케팅","디자인","인사","재무","기획","운영"];
+const REGIONS = ["서울","경기","인천","부산","대구","광주","대전","울산","세종","강원","제주"];
+const RANK_NAMES = ["-","사원","대리","과장","차장","부장"];
+
+const SAMPLE = [
+  {name:"김민준",age:29,dept:"개발",rank:1,region:"서울"},
+  {name:"이서연",age:34,dept:"개발",rank:3,region:"경기"},
+  {name:"박도윤",age:41,dept:"개발",rank:4,region:"서울"},
+  {name:"최지우",age:27,dept:"개발",rank:1,region:"부산"},
+  {name:"정하은",age:38,dept:"영업",rank:3,region:"서울"},
+  {name:"강시우",age:45,dept:"영업",rank:5,region:"대구"},
+  {name:"조서준",age:31,dept:"영업",rank:2,region:"경기"},
+  {name:"윤하린",age:28,dept:"영업",rank:1,region:"광주"},
+  {name:"장유나",age:36,dept:"마케팅",rank:3,region:"서울"},
+  {name:"임지호",age:52,dept:"마케팅",rank:5,region:"서울"},
+  {name:"한소율",age:26,dept:"마케팅",rank:1,region:"대전"},
+  {name:"오지훈",age:33,dept:"마케팅",rank:2,region:"경기"},
+  {name:"서아린",age:40,dept:"디자인",rank:4,region:"부산"},
+  {name:"신예준",age:29,dept:"디자인",rank:2,region:"서울"},
+  {name:"권수아",age:44,dept:"디자인",rank:4,region:"대구"},
+  {name:"송지민",age:30,dept:"디자인",rank:2,region:"경기"},
+  {name:"배유진",age:39,dept:"인사",rank:3,region:"서울"},
+  {name:"노은우",age:50,dept:"인사",rank:5,region:"광주"},
+  {name:"홍하윤",age:27,dept:"인사",rank:1,region:"서울"},
+  {name:"문지안",age:35,dept:"인사",rank:3,region:"부산"},
+  {name:"양태민",age:48,dept:"재무",rank:5,region:"대전"},
+  {name:"구예린",age:32,dept:"재무",rank:2,region:"경기"},
+  {name:"백지후",age:37,dept:"재무",rank:3,region:"서울"},
+  {name:"고채원",age:29,dept:"재무",rank:1,region:"대구"},
+];
+
+let people = [];
+
+/* ---------- 저장/복원 ---------- */
+function save(){ try{ localStorage.setItem('td_people', JSON.stringify(people)); }catch(e){} }
+function load(){
+  try{
+    const raw = localStorage.getItem('td_people');
+    if(raw){ people = JSON.parse(raw); return true; }
+  }catch(e){}
+  return false;
+}
+
+/* ---------- 렌더링 ---------- */
+function render(){
+  const box = document.getElementById('people');
+  box.innerHTML = '';
+  people.forEach((p, i) => {
+    const row = document.createElement('div');
+    row.className = 'person';
+    row.innerHTML = `
+      <div class="idx">${String(i+1).padStart(2,'0')}</div>
+      <div class="fields">
+        <input type="text" value="${escapeHtml(p.name)}" placeholder="이름" oninput="update(${i},'name',this.value)">
+        <input type="number" min="18" max="80" value="${p.age}" placeholder="나이" oninput="update(${i},'age',parseInt(this.value)||0)">
+        <select onchange="update(${i},'dept',this.value)">
+          ${DEPTS.map(d=>`<option ${d===p.dept?'selected':''}>${d}</option>`).join('')}
+        </select>
+        <select onchange="update(${i},'rank',parseInt(this.value))">
+          ${[1,2,3,4,5].map(r=>`<option value="${r}" ${r===p.rank?'selected':''}>${RANK_NAMES[r]}</option>`).join('')}
+        </select>
+        <select onchange="update(${i},'region',this.value)">
+          ${REGIONS.map(r=>`<option ${r===p.region?'selected':''}>${r}</option>`).join('')}
+        </select>
+      </div>
+      <button class="del" onclick="remove(${i})" aria-label="삭제">×</button>
+    `;
+    box.appendChild(row);
+  });
+  updateRunBtn();
+}
+
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function update(i, field, val){ people[i][field] = val; save(); updateRunBtn(); }
+function remove(i){ people.splice(i,1); render(); save(); }
+function addPerson(){
+  people.push({name:'새 멤버'+(people.length+1), age:30, dept:DEPTS[0], rank:1, region:REGIONS[0]});
+  render(); save();
+}
+function resetSample(){ people = JSON.parse(JSON.stringify(SAMPLE)); render(); save(); }
+function clearAll(){ if(confirm('모든 인원을 지웁니다.')){ people=[]; render(); save(); } }
+
+function updateRunBtn(){
+  const btn = document.getElementById('run');
+  const n = people.length;
+  if(n % 4 !== 0 || n < 8){
+    btn.disabled = true;
+    btn.textContent = `팀당 4명 — 4의 배수 필요 (현재 ${n}명)`;
+  } else {
+    btn.disabled = false;
+    btn.textContent = `팀 나누기 실행 — ${n}명을 ${n/4}팀으로`;
+  }
+}
+
+/* ---------- 가중치 슬라이더 ---------- */
+['age','dept','rank','region'].forEach(k=>{
+  const el = document.getElementById('w-'+k);
+  const v  = document.getElementById('w-'+k+'-v');
+  el.addEventListener('input', ()=> v.textContent = parseFloat(el.value).toFixed(1));
+});
+
+function getWeights(){
+  return {
+    age:    parseFloat(document.getElementById('w-age').value),
+    dept:   parseFloat(document.getElementById('w-dept').value),
+    rank:   parseFloat(document.getElementById('w-rank').value),
+    region: parseFloat(document.getElementById('w-region').value),
+  };
+}
+
+/* ---------- 알고리즘 ---------- */
+function similarity(a, b, w){
+  const ageSim    = Math.max(0, 1 - Math.abs(a.age - b.age) / 20);
+  const deptSim   = a.dept === b.dept ? 1 : 0;
+  const rankSim   = Math.max(0, 1 - Math.abs(a.rank - b.rank) / 4);
+  const regionSim = a.region === b.region ? 1 : 0;
+  return w.age*ageSim + w.dept*deptSim + w.rank*rankSim + w.region*regionSim;
+}
+function teamScore(team, w){
+  let s = 0;
+  for(let i=0;i<team.length;i++)
+    for(let j=i+1;j<team.length;j++)
+      s += similarity(team[i], team[j], w);
+  return s;
+}
+function totalScore(teams, w){ return teams.reduce((a,t)=>a+teamScore(t,w),0); }
+
+function randomPartition(arr, nTeams, size){
+  const s = arr.slice().sort(()=>Math.random()-.5);
+  const out = [];
+  for(let i=0;i<nTeams;i++) out.push(s.slice(i*size,(i+1)*size));
+  return out;
+}
+
+function localSearch(teams, w, maxPasses=50){
+  let cur = totalScore(teams, w);
+  const T = teams.length, k = teams[0].length;
+  for(let p=0;p<maxPasses;p++){
+    let improved = false;
+    for(let i=0;i<T;i++){
+      for(let j=i+1;j<T;j++){
+        for(let a=0;a<k;a++){
+          for(let b=0;b<k;b++){
+            const tmp = teams[i][a]; teams[i][a] = teams[j][b]; teams[j][b] = tmp;
+            const ns = totalScore(teams, w);
+            if(ns < cur - 1e-12){ cur = ns; improved = true; }
+            else { const t2 = teams[i][a]; teams[i][a] = teams[j][b]; teams[j][b] = t2; }
+          }
+        }
+      }
+    }
+    if(!improved) break;
+  }
+  return {teams, score:cur};
+}
+
+function solve(people, nTeams, size, restarts, w){
+  let best = null, bestScore = Infinity;
+  for(let r=0;r<restarts;r++){
+    const init = randomPartition(people, nTeams, size);
+    const {teams, score} = localSearch(init, w);
+    if(score < bestScore){ bestScore = score; best = teams.map(t=>t.slice()); }
+  }
+  return {teams:best, score:bestScore};
+}
+
+/* ---------- 실행 ---------- */
+function run(){
+  const btn = document.getElementById('run');
+  const restarts = parseInt(document.getElementById('restarts').value);
+  const w = getWeights();
+  const size = 4;
+  const nTeams = people.length / size;
+
+  btn.disabled = true;
+  btn.textContent = '계산 중...';
+
+  // 브라우저가 버튼 상태를 그리도록 한 틱 뒤에 실행
+  setTimeout(() => {
+    const t0 = performance.now();
+    const baseline = totalScore(randomPartition(people, nTeams, size), w);
+    const {teams, score} = solve(people, nTeams, size, restarts, w);
+    const elapsed = (performance.now() - t0);
+
+    showResults(teams, score, baseline, elapsed, w);
+    btn.disabled = false;
+    updateRunBtn();
+  }, 30);
+}
+
+function showResults(teams, score, baseline, elapsed, w){
+  const box = document.getElementById('results');
+  const delta = baseline > 0 ? ((baseline - score) / baseline * 100) : 0;
+
+  let html = `
+    <div class="score-card">
+      <span class="score-big">${score.toFixed(2)}</span>
+      <span class="score-label">total score · lower is better</span>
+      <span class="score-delta ${delta<0?'bad':''}">
+        vs 랜덤 ${delta>=0?'▼':'▲'} ${Math.abs(delta).toFixed(1)}% · ${elapsed.toFixed(0)}ms
+      </span>
+    </div>
+  `;
+
+  teams.forEach((t, i) => {
+    const ts = teamScore(t, w);
+    const depts = new Set(t.map(p=>p.dept)).size;
+    const regions = new Set(t.map(p=>p.region)).size;
+    const ages = t.map(p=>p.age);
+    const ageSpread = Math.max(...ages) - Math.min(...ages);
+
+    html += `
+      <div class="team">
+        <div class="team-head">
+          <div class="team-name">Team <span class="n">${String(i+1).padStart(2,'0')}</span></div>
+          <div class="team-score">부서${depts}·지역${regions}·나이폭${ageSpread} &nbsp;|&nbsp; <b>${ts.toFixed(2)}</b></div>
+        </div>
+    `;
+    t.forEach(p => {
+      html += `
+        <div class="member">
+          <div class="mn">${escapeHtml(p.name)}</div>
+          <div class="mm">${p.age}세</div>
+          <div class="tag">${escapeHtml(p.dept)}</div>
+          <div class="tag gray">${RANK_NAMES[p.rank]}</div>
+          <div class="tag gray">${escapeHtml(p.region)}</div>
+        </div>
+      `;
+    });
+    html += `</div>`;
+  });
+
+  box.innerHTML = html;
+  // 결과로 부드럽게 스크롤
+  box.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+/* ---------- 초기화 ---------- */
+if(!load()){ resetSample(); } else { render(); }
+</script>
+</body>
+</html>
